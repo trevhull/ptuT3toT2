@@ -26,6 +26,7 @@ based on:
 #include	<stdint.h>
 #include	<string.h>
 #include	<stdbool.h>
+#include	<uuid/uuid.h>
 
 #define MEASMODE_T2  2
 #define MEASMODE_T3  3
@@ -136,10 +137,13 @@ int main(int argc, char* argv[])
 	int NumRecordsIdx = 0;
 	long long RecordType = 0;
 	char* AnsiBuffer;
+	char fileguid;	
 	wchar_t* WideBuffer;	
-	char Buffer[40];
+	char uffer[40];
+	char Buffer[40] = "{";
 	time_t CreateTime;
 	char* Temp;
+	uuid_t guu;
 	
 	printf("\nHydraHarp/timeharp PTU T3 to PTU T2 Conversion Tool");
 	printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -371,7 +375,18 @@ There are only a few thing we have to change so that it will recognize it as a T
 		if( strncmp(TagHead.Ident, "CreatorSW_Name", 14)==0 )
 			strcpy(AnsiBuffer, "ptuT3toT2");		//So we gotta tell the instrument and any people that the new file was written by this program, not by Symphotime. So here's that. If someobyd says "This data is strange" They'll see it was made by this program.
 									//right so we strncmp to find the Creator name, and then we give the Buffer the new name of ptuT3toT2
-			
+		if( strncmp(TagHead.Ident, "File_GUID", 9)==0)
+			{
+			uuid_generate_time_safe(guu);	
+			uuid_unparse_upper(guu,uffer);
+			strcat(uffer,"}");
+			strcat(Buffer, uffer);
+			strcpy(AnsiBuffer,Buffer);
+			printf("\n size of tagvalue is %lld", TagHead.TagValue);
+			printf("\n file guid is %s",AnsiBuffer);		
+			printf("\n sizeof AnsiBuffer is %ld", sizeof(AnsiBuffer));
+			}
+				
 		result = fwrite( &TagHead, 1, sizeof(TagHead), fpout);
  			if (result!= sizeof(TagHead))				//Here we're writing the tag, and we're not really changing anythying, probably the TagValue should be changed to the new size of the ANSI string, but it was easier to just leave the string the same size. probably some empty characters
 			{
