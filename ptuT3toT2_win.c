@@ -26,6 +26,7 @@ based on:
 #include	<stdint.h>
 #include	<string.h>
 #include	<stdbool.h>
+#include	<objbase.h> //tried to only use standard C libraries so it would be windows/linux compatable but had to add this windows one for some GUID writing.
 
 #define MEASMODE_T2  2
 #define MEASMODE_T3  3
@@ -136,10 +137,16 @@ int main(int argc, char* argv[])
 	int NumRecordsIdx = 0;
 	long long RecordType = 0;
 	char* AnsiBuffer;
+	char fileguid;	
 	wchar_t* WideBuffer;	
-	char Buffer[40];
+	wchar_t  uffer[40]={0};
+	char ffer[40]={0};
+	char Buffer[40] = "{";
 	time_t CreateTime;
 	char* Temp;
+	GUID guu = {0};
+
+
 	
 	printf("\nHydraHarp/timeharp PTU T3 to PTU T2 Conversion Tool");
 	printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -312,9 +319,9 @@ There are only a few thing we have to change so that it will recognize it as a T
 		
 		if (strcmp(TagHead.Ident, "HW_BaseResolution")==0)
 			NewGlobRes = *(double*)&TagHead.TagValue;// apparently the T2 resolution is hardware based and is always the same for diff hardware. The global resolution can change for T3, but not T2
+
 /* From picoquant support:
 	 "MeasDesc_Resolution, and MeasDesc_BinningFactor have meaning only in T3 mode. LEave them as they saved in the original T3 mode data file. MeasDesc GlobalREsolution is 1ps in HydraHarp400. More precisely, stored as 1.000000e-012 or a number very close to this.
-
 	In general, time tagging in T2 mode is always done iwthe the best time resolution the device can provide and that value is stored as MeasDesc_GlobalResolution. 1ps for HH400, 4ps for PH300, 25ps for TH260Pico, 250ps or 1ns for TH260Nano."
 */
 
@@ -371,7 +378,19 @@ There are only a few thing we have to change so that it will recognize it as a T
 		if( strncmp(TagHead.Ident, "CreatorSW_Name", 14)==0 )
 			strcpy(AnsiBuffer, "ptuT3toT2");		//So we gotta tell the instrument and any people that the new file was written by this program, not by Symphotime. So here's that. If someobyd says "This data is strange" They'll see it was made by this program.
 									//right so we strncmp to find the Creator name, and then we give the Buffer the new name of ptuT3toT2
-			
+		if( strncmp(TagHead.Ident, "File_GUID", 9)==0)
+			{						//Symphotime uses the File_GUID to refer to each file, every file has to have a unique GUID, so if you use the same GUID as the T3 file you can't load both files. for example you also can't load two files with different time gating
+			CoCreateGuid(&guu);				//To get around this we'll generate a new GUID for each file, it doesn't matter as long as it's unique so you can load multiple files at a time. This bit of code generate the code
+			result = StringFromGUID2(&guu,uffer,40);
+			if (result==0)					//This is the only part of the code that is not platform agnostic, the only difference between ptuT3toT2_linux and ptuT3toT2_win :/ I'm not happy about it!
+				{
+				printf("\nStringFromGUID2 failed");
+				goto close;
+				}
+			wcstombs(ffer,uffer,sizeof(uffer));		//which speaking of curly brace its windows default and, like, impossible to make on linux :( or not impssible but I had to manually add it >:/
+			strcpy(AnsiBuffer,ffer);
+			}
+				
 		result = fwrite( &TagHead, 1, sizeof(TagHead), fpout);
  			if (result!= sizeof(TagHead))				//Here we're writing the tag, and we're not really changing anythying, probably the TagValue should be changed to the new size of the ANSI string, but it was easier to just leave the string the same size. probably some empty characters
 			{
