@@ -26,7 +26,7 @@ based on:
 #include	<stdint.h>
 #include	<string.h>
 #include	<stdbool.h>
-#include	<uuid/uuid.h>
+#include	<uuid/uuid.h>	//just to generate the GUID, linux only, why I had to make a linux and windows version
 
 #define MEASMODE_T2  2
 #define MEASMODE_T3  3
@@ -376,15 +376,15 @@ There are only a few thing we have to change so that it will recognize it as a T
 			strcpy(AnsiBuffer, "ptuT3toT2");		//So we gotta tell the instrument and any people that the new file was written by this program, not by Symphotime. So here's that. If someobyd says "This data is strange" They'll see it was made by this program.
 									//right so we strncmp to find the Creator name, and then we give the Buffer the new name of ptuT3toT2
 		if( strncmp(TagHead.Ident, "File_GUID", 9)==0)
-			{
-			uuid_generate_time_safe(guu);	
+			{						//Symphotime uses the GUID to identify each file, so to open two files with different time gates we'll make up a new GUID for every file we make
+			uuid_generate_time_safe(guu);			//A GUID is microsoft specific, based on UUID. Linux can't exactly generate GUIDS. to get a GUID that symphotime will read it must be all caps and must must must have {} curly braces before and after
 			uuid_unparse_upper(guu,uffer);
-			strcat(uffer,"}");
-			strcat(Buffer, uffer);
+			strcat(uffer,"}");				//adding those braces. It was called uffer cuz it's the right Buffer but without the starting {
+			strcat(Buffer, uffer);				
 			strcpy(AnsiBuffer,Buffer);
-			printf("\n size of tagvalue is %lld", TagHead.TagValue);
-			printf("\n file guid is %s",AnsiBuffer);		
-			printf("\n sizeof AnsiBuffer is %ld", sizeof(AnsiBuffer));
+//			printf("\n size of tagvalue is %lld", TagHead.TagValue);
+//			printf("\n file guid is %s",AnsiBuffer);		
+//			printf("\n sizeof AnsiBuffer is %ld", sizeof(AnsiBuffer));
 			}
 				
 		result = fwrite( &TagHead, 1, sizeof(TagHead), fpout);
