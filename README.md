@@ -4,7 +4,7 @@ This is a program that converts ptu files from picoquant from T3 mode to T2 mode
 Tested on timeharp ptu files on windows 64 bit.
 
 to do:
-Change File GUIDs
+
 expand to non timeharp files
 
 
