@@ -521,7 +521,7 @@ There are only a few thing we have to change so that it will recognize it as a T
 
 
 
-			 if( (T3Rec.bits.dtime >= tg_start) && (T3Rec.bits.dtime <= tg_end) ) //apply time gate
+			 if( (T3Rec.bits.dtime*Resolution*1e12 >= tg_start) && (T3Rec.bits.dtime*Resolution*1e12 <= tg_end) ) //apply time gate. timegate is in ps so multiply dtime by MeasDesc_Resolution(usually like 50 ps or 5x10^-11 or so) to get to sec then multiply by 1e12 to get to ps.
 			 {
 				 //check for HT2 oferflow
 			//So we get the actual arrival time to convert to T2 but we gotta back out of actual time and use T2 oveflows for the Symphotime or whatever to read it correctly. So delta is the actual arrival time corrected WITH overflows.		

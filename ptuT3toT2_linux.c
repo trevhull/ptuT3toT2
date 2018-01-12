@@ -517,7 +517,7 @@ There are only a few thing we have to change so that it will recognize it as a T
 
 
 
-			 if( (T3Rec.bits.dtime >= tg_start) && (T3Rec.bits.dtime <= tg_end) ) //apply time gate
+			 if( (T3Rec.bits.dtime*Resolution*1e12 >= tg_start) && (T3Rec.bits.dtime*Resolution*1e12 <= tg_end) ) //apply time gate. The tg is in ps so we need to convert the dtime to sec by multiplying by MeasDesc_Resolution (see header, is like 50 ps) then mulitply by 1e12 to get to ps
 			 {
 				 //check for HT2 oferflow
 			//So we get the actual arrival time to convert to T2 but we gotta back out of actual time and use T2 oveflows for the Symphotime or whatever to read it correctly. So delta is the actual arrival time corrected WITH overflows.		
@@ -575,10 +575,6 @@ There are only a few thing we have to change so that it will recognize it as a T
 	TagHead.Idx = NumRecordsIdx;
 	TagHead.Typ = tyInt8;
 	TagHead.TagValue = nht2recs;
-//	printf("\n%s",TagHead.Ident);
-//	printf("\n%lld",TagHead.TagValue);	
-//	printf("\n%lld",nht2recs);	
-	//Those prints above are just to make sure we counted the records correctly.
 	result = fwrite( &TagHead, 1, sizeof(TagHead) ,fpout);
 	if (result!= sizeof(TagHead))
 	{
