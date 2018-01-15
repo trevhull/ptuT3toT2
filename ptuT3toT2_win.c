@@ -529,16 +529,18 @@ There are only a few thing we have to change so that it will recognize it as a T
 				output_delta = 0;
 			// This is supposed to add the overflow compression (i.e. can write 2 to the timetag if there are two overflows between photons) but it doesn't work. As far as I can tell overflow compression is less important in T2 mode since there are fewer overflows, but a better while or if loop should
 			// be made to make this more general. Right now it only writes 1 since it mostly works fine.
-				 while (delta>=T2WRAPAROUND) //must insert an overflow record
+				 if (delta>=T2WRAPAROUND) //must insert an overflow record
 				 {
-					
+					do
+					{
 					output_delta++;	//output delta would be what you write as the timetag for overflow compression but I can't get the loop to actually loop without writing, will hopefully fix this.
-					output_oflcorrection +=T2WRAPAROUND*output_delta;
-
+					output_oflcorrection +=T2WRAPAROUND;
+					delta = truetime - output_oflcorrection;
+					}while(delta>=T2WRAPAROUND);
 					T2Rec.bits.special = 1; 
 					T2Rec.bits.channel = 0x3F; 
-					T2Rec.bits.timetag = 1;
-
+					T2Rec.bits.timetag = output_delta;
+					output_delta=0;
 					result = fwrite(&T2Rec.allbits,sizeof(T2Rec.allbits),1,fpout); 
 					if(result!=1)
 					{
@@ -549,13 +551,13 @@ There are only a few thing we have to change so that it will recognize it as a T
 
 //					output_oflcorrection += T2WRAPAROUND;
 
-					delta = truetime - output_oflcorrection;
+//					delta = truetime - output_oflcorrection;
 				 }
 
 				 //populate and store the PTU T2 record
 				T2Rec.bits.special = 0; 
 				T2Rec.bits.channel = T3Rec.bits.channel;
-				T2Rec.bits.timetag = delta;
+				T2Rec.bits.timetag =(unsigned)delta;
 
 				result = fwrite(&T2Rec.allbits,sizeof(T2Rec.allbits),1,fpout); 
 				if(result!=1)
