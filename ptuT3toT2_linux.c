@@ -26,7 +26,7 @@ based on:
 #include	<stdint.h>
 #include	<string.h>
 #include	<stdbool.h>
-#include	<uuid/uuid.h>	//just to generate the GUID, linux only, why I had to make a linux and windows version
+#include	<uuid/uuid.h>
 
 #define MEASMODE_T2  2
 #define MEASMODE_T3  3
@@ -376,15 +376,15 @@ There are only a few thing we have to change so that it will recognize it as a T
 			strcpy(AnsiBuffer, "ptuT3toT2");		//So we gotta tell the instrument and any people that the new file was written by this program, not by Symphotime. So here's that. If someobyd says "This data is strange" They'll see it was made by this program.
 									//right so we strncmp to find the Creator name, and then we give the Buffer the new name of ptuT3toT2
 		if( strncmp(TagHead.Ident, "File_GUID", 9)==0)
-			{						//Symphotime uses the GUID to identify each file, so to open two files with different time gates we'll make up a new GUID for every file we make
-			uuid_generate_time_safe(guu);			//A GUID is microsoft specific, based on UUID. Linux can't exactly generate GUIDS. to get a GUID that symphotime will read it must be all caps and must must must have {} curly braces before and after
+			{
+			uuid_generate(guu);	
 			uuid_unparse_upper(guu,uffer);
-			strcat(uffer,"}");				//adding those braces. It was called uffer cuz it's the right Buffer but without the starting {
-			strcat(Buffer, uffer);				
+			strcat(uffer,"}");
+			strcat(Buffer, uffer);
 			strcpy(AnsiBuffer,Buffer);
-//			printf("\n size of tagvalue is %lld", TagHead.TagValue);
-//			printf("\n file guid is %s",AnsiBuffer);		
-//			printf("\n sizeof AnsiBuffer is %ld", sizeof(AnsiBuffer));
+			printf("\n size of tagvalue is %lld", TagHead.TagValue);
+			printf("\n file guid is %s",AnsiBuffer);		
+			printf("\n sizeof AnsiBuffer is %ld", sizeof(AnsiBuffer));
 			}
 				
 		result = fwrite( &TagHead, 1, sizeof(TagHead), fpout);
@@ -472,6 +472,7 @@ There are only a few thing we have to change so that it will recognize it as a T
 
 	for(n=0; n<NumRecords; n++)
 	{
+//		printf("\n n is %d", n);
 		i=0;  
 		result = fread(&T3Rec.allbits,sizeof(T3Rec.allbits),1,fpin); 
 		if(result!=1)
@@ -517,7 +518,7 @@ There are only a few thing we have to change so that it will recognize it as a T
 
 
 
-			 if( (T3Rec.bits.dtime*Resolution*1e12 >= tg_start) && (T3Rec.bits.dtime*Resolution*1e12 <= tg_end) ) //apply time gate. The tg is in ps so we need to convert the dtime to sec by multiplying by MeasDesc_Resolution (see header, is like 50 ps) then mulitply by 1e12 to get to ps
+			 if( (T3Rec.bits.dtime*Resolution*1e12 >= tg_start) && (T3Rec.bits.dtime*Resolution*1e12 <= tg_end) ) //apply time gate
 			 {
 				 //check for HT2 oferflow
 			//So we get the actual arrival time to convert to T2 but we gotta back out of actual time and use T2 oveflows for the Symphotime or whatever to read it correctly. So delta is the actual arrival time corrected WITH overflows.		
@@ -525,33 +526,36 @@ There are only a few thing we have to change so that it will recognize it as a T
 				output_delta = 0;
 			// This is supposed to add the overflow compression (i.e. can write 2 to the timetag if there are two overflows between photons) but it doesn't work. As far as I can tell overflow compression is less important in T2 mode since there are fewer overflows, but a better while or if loop should
 			// be made to make this more general. Right now it only writes 1 since it mostly works fine.
-				 while (delta>=T2WRAPAROUND) //must insert an overflow record
+				 if(delta>=T2WRAPAROUND) //must insert an overflow record
 				 {
-					
+					do	
+					{
 					output_delta++;	//output delta would be what you write as the timetag for overflow compression but I can't get the loop to actually loop without writing, will hopefully fix this.
-					output_oflcorrection +=T2WRAPAROUND*output_delta;
-
+					output_oflcorrection +=T2WRAPAROUND;
+					delta = truetime - output_oflcorrection;
+					}while(delta>=T2WRAPAROUND);	
 					T2Rec.bits.special = 1; 
 					T2Rec.bits.channel = 0x3F; 
-					T2Rec.bits.timetag = 1;
-
+					T2Rec.bits.timetag = output_delta;
+					output_delta=0;
 					result = fwrite(&T2Rec.allbits,sizeof(T2Rec.allbits),1,fpout); 
 					if(result!=1)
 					{
 						printf("\nerror writing to output file! \n");
 						goto ex;
 					}
+				//	output_oflcorrection +=T2WRAPAROUND*output_delta;
 					nht2recs++;
 
 //					output_oflcorrection += T2WRAPAROUND;
 
-					delta = truetime - output_oflcorrection;
+				//	delta = truetime - output_oflcorrection;
 				 }
-
+				 
 				 //populate and store the PTU T2 record
 				T2Rec.bits.special = 0; 
 				T2Rec.bits.channel = T3Rec.bits.channel;
-				T2Rec.bits.timetag = delta;
+				T2Rec.bits.timetag = (unsigned)delta;
 
 				result = fwrite(&T2Rec.allbits,sizeof(T2Rec.allbits),1,fpout); 
 				if(result!=1)
@@ -561,7 +565,9 @@ There are only a few thing we have to change so that it will recognize it as a T
 				}
 
 				nht2recs++;
-			 }
+			 //	printf("\nnhtrecs is %lld",nht2recs);
+				
+			}
 
 		 }
 	}
@@ -575,6 +581,10 @@ There are only a few thing we have to change so that it will recognize it as a T
 	TagHead.Idx = NumRecordsIdx;
 	TagHead.Typ = tyInt8;
 	TagHead.TagValue = nht2recs;
+//	printf("\n%s",TagHead.Ident);
+//	printf("\n%lld",TagHead.TagValue);	
+//	printf("\n%lld",nht2recs);	
+	//Those prints above are just to make sure we counted the records correctly.
 	result = fwrite( &TagHead, 1, sizeof(TagHead) ,fpout);
 	if (result!= sizeof(TagHead))
 	{
