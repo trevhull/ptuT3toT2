@@ -22,14 +22,17 @@ If you just wanna have no time gate put in the time gate as 0 100000000000 or so
 
 some command line examples:
   /path/to/ptuT3toT2 /path/to/sampleT3data.ptu /path/to/convertedT2data.ptu 0 1000000000000
+  
   ----to avoid a time gate just make the time window so large it encompassess all timing events (in this case 0 ps to 1000000000000 ps)
   ----sampleT3data.ptu is the T3 file you measured from the instrument
   ----convertedT2data.ptu is the T2 file this program spits out
   
   for windows use:
   /path/to/ptuT3toT2.exe /path/to/sampleT3data.ptu /path/to/convertedT2data.ptu 0 1000000000000
+  
   ----executable should work but you can also compile again
   
   for a 10 nanosecond time gate
   /path/to/ptuT3toT2 /path/to/sampleT3data.ptu /path/to/convertedT2data.ptu 0 10000
+  
   ----remember, the timegate is in picoseconds
