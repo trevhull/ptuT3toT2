@@ -10,18 +10,26 @@ expand to non timeharp files (I'm never going to do this lol so feel free to for
 
 How to guide:
 This is a command line tool, no GUI. use your shell in Linux or the Command Prompt in windows.
-for Linux you may have to compile using gcc. If you're really stuck let me know but I mostly forgot which flags I used. Sorry! follow the error messages or message me for help.
+for Linux you may have to compile using gcc. ~~If you're really stuck let me know but I mostly forgot which flags I used. Sorry! follow the error messages or message me for help.~~ **(Update! use "-luuid" flag)** but I think it's a different uuid tag for windows. Sorry! msg me with problems still.
 
 Before use, make a T3 measurement on a picoquant instrument. It needs to be T3 to properly apply time gate. At the end you'll have a T2 with timegate. Also useful if you want both a T3 and T2 file from one measurement.
 
 usage: ptuT3toT2 infile outfile [timegate_start timegate_end]
 infile is a HydraHarp/TimeHarp PTU T3 file (binary)
 outfile is a HydraHarp/TimeHarp PTU T2 file (binary)
-the optional parameters timegate_start and timegate_end are in picoseconds but it seems like it's not really optional
+the optional parameters timegate_start and timegate_end are in picoseconds but it seems like it's not actually really optional
 If you just wanna have no time gate put in the time gate as 0 100000000000 or something
 
+Linux:
+  To compile on linux you'll need the "-luuid" tag, this worked for me:
+  gcc /path/to/ptuT3toT2_linux.c -o /path/to/executable -luuid
+  then you can run 
+  ./executable /path/to/T3data.ptu /path/to/convertT2data.ptu 0 50
+ for example.
+
+
 some command line examples:
-  /path/to/ptuT3toT2 /path/to/sampleT3data.ptu /path/to/convertedT2data.ptu 0 1000000000000
+  ./path/to/ptuT3toT2 /path/to/sampleT3data.ptu /path/to/convertedT2data.ptu 0 1000000000000
   
   ----to avoid a time gate just make the time window so large it encompassess all timing events (in this case 0 ps to 1000000000000 ps)
   ----sampleT3data.ptu is the T3 file you measured from the instrument
@@ -32,7 +40,10 @@ some command line examples:
   
   ----executable should work but you can also compile again
   
-  for a 10 nanosecond time gate
-  /path/to/ptuT3toT2 /path/to/sampleT3data.ptu /path/to/convertedT2data.ptu 0 10000
+  for a 25 nanosecond time gate
+  /path/to/ptuT3toT2 /path/to/sampleT3data.ptu /path/to/convertedT2data.ptu 0 25000
   
   ----remember, the timegate is in picoseconds
+
+Special thanks to:
+Picoquant support, snizzleorg for his acceptance of this existing, and Vishnu EK for helping me improve documentation
